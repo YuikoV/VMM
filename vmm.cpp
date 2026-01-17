@@ -56,11 +56,11 @@ void VirtualMemoryManager::handlePageFault(uint32_t pde_idx,
     uint32_t frame = allocateFrame();
     
     // 加载页面数据
-    if (pte.disk_addr != 0) {
-        swap_manager.loadPage(memory_data[frame], pte.disk_addr);
-    } else {
-        std::memset(memory_data[frame], 0, PAGE_SIZE);
-    }
+    if (pte.on_disk) {
+    swap_manager.loadPage(memory_data[frame], pte.disk_addr);
+} else {
+    std::memset(memory_data[frame], 0, PAGE_SIZE);
+}
     
     // 更新页表项
     pte.valid = true;
@@ -95,11 +95,12 @@ uint32_t VirtualMemoryManager::allocateFrame() {
     
     // 写回脏页
     if (old_entry.dirty) {
-        if (old_entry.disk_addr == 0) {
-            old_entry.disk_addr = swap_manager.allocateSpace();
-        }
-        swap_manager.savePage(memory_data[victim], old_entry.disk_addr);
+    if (!old_entry.on_disk) {
+        old_entry.disk_addr = swap_manager.allocateSpace();
+        old_entry.on_disk = true;
     }
+    swap_manager.savePage(memory_data[victim], old_entry.disk_addr);
+}
     
     old_entry.valid = false;
     return victim;

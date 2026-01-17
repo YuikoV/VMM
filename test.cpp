@@ -26,16 +26,42 @@ void testSequentialAccess(VirtualMemoryManager& vmm) {
     std::cout << "\n测试用例1: 顺序访问测试\n";
     vmm.resetStatistics();
     
+    // 阶段1: 写入数据
+    std::cout << "阶段1: 写入1000个页面...\n";
     for (uint32_t i = 0; i < 1000; i++) {
         vmm.writeByte(i * PAGE_SIZE, (uint8_t)(i % 256));
     }
+    std::cout << "写入完成\n";
     
+    // 阶段2: 验证数据
+    std::cout << "阶段2: 验证1000个页面...\n";
     bool pass = true;
+    int fail_count = 0;
+    int first_fail = -1;
+    
     for (uint32_t i = 0; i < 1000; i++) {
-        uint8_t val = vmm.readByte(i * PAGE_SIZE);
-        if (val != (uint8_t)(i % 256)) {
+        uint8_t expected = (uint8_t)(i % 256);
+        uint8_t actual = vmm.readByte(i * PAGE_SIZE);
+        if (actual != expected) {
+            if (first_fail == -1) first_fail = i;
+            if (fail_count < 10) {  // 打印前10个错误
+                std::cout << "  错误 @ 页" << i << ": 期望=" << (int)expected 
+                         << " 实际=" << (int)actual << std::endl;
+            }
+            fail_count++;
             pass = false;
-            break;
+        }
+    }
+    
+    if (!pass) {
+        std::cout << "\n发现 " << fail_count << " 个错误\n";
+        std::cout << "第一个错误在页面 " << first_fail << "\n";
+        
+        // 检查是否是连续的错误
+        if (first_fail >= 256) {
+            std::cout << "分析: 错误出现在第" << first_fail 
+                     << "个页面,已超过256个物理帧\n";
+            std::cout << "可能原因: 页面置换后数据未正确保存/加载\n";
         }
     }
     

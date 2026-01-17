@@ -1,6 +1,7 @@
 #include "statistics.h"
+#include "config.h"  // 添加这行!
 #include <iomanip>
-#include "config.h"
+
 Statistics::Statistics() 
     : total_accesses(0), page_faults(0), 
       page_hits(0), total_fault_time(0.0) {}
